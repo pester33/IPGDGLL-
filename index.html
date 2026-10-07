@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>IPGDGLL</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=Saira+Condensed:wght@600;700;800&display=swap">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<section id="login">
+  <div class="login-top">
+    <div class="wordmark">IPGDGLL<span>.LIST</span></div>
+  </div>
+  <div class="login-main">
+    <h1>IPGDGLL</h1>
+    <p class="sub">The community-ranked list of our hardest Geometry Dash levels.</p>
+    <div class="card">
+      <div class="tabs" role="tablist">
+        <button id="tab-in" role="tab" aria-selected="true">Log in</button>
+        <button id="tab-up" role="tab" aria-selected="false">Sign up</button>
+      </div>
+      <form class="auth" id="authForm" novalidate>
+        <label>Username<input type="text" id="u" autocomplete="username" autocapitalize="off" spellcheck="false" placeholder="3–20 letters, numbers or _"></label>
+        <label>Password<input type="password" id="p" autocomplete="current-password" placeholder="At least 6 characters"></label>
+        <label id="confirmWrap" hidden>Confirm password<input type="password" id="p2" autocomplete="new-password"></label>
+        <p class="err" id="err"></p>
+        <p class="okmsg" id="msg"></p>
+        <button class="btn" type="submit" id="authBtn"><span id="authLabel">Log in</span> <span aria-hidden="true">→</span></button>
+        <button class="btn ghost" type="button" id="guest">Continue as guest</button>
+      </form>
+    </div>
+    <div class="features" aria-hidden="true">
+      <div class="feat"><svg viewBox="0 0 24 24"><path d="M3 4h2v2H3zm4 0h14v2H7zM3 11h2v2H3zm4 0h14v2H7zm-4 7h2v2H3zm4 0h14v2H7z"/></svg>Ranking</div>
+      <div class="feat"><svg viewBox="0 0 24 24"><path d="M7 3h10v2h4v3a5 5 0 0 1-4.6 5A5 5 0 0 1 13 15.9V19h3v2H8v-2h3v-3.1A5 5 0 0 1 7.6 13 5 5 0 0 1 3 8V5h4zm10 4v4a3 3 0 0 0 2-3V7zM5 7v1a3 3 0 0 0 2 3V7z"/></svg>Records</div>
+      <div class="feat"><svg viewBox="0 0 24 24"><path d="M3 5h18v2H3zm0 6h18v2H3zm0 6h12v2H3z"/></svg>News</div>
+      <div class="feat"><svg viewBox="0 0 24 24"><path d="M11 10h3v10h-3zm1.5-6a2 2 0 1 1 0 4 2 2 0 0 1 0-4z"/></svg>Submit</div>
+    </div>
+  </div>
+  <div class="login-foot"></div>
+</section>
+
+<div id="app" hidden>
+  <header class="bar">
+    <div class="bar-in">
+      <div class="wordmark">IPGDGLL<span>.LIST</span></div>
+      <nav class="main" id="nav">
+        <button class="admin" data-page="admin">Admin</button>
+        <button data-page="main" aria-current="page">Main</button>
+        <button data-page="submit">Submit</button>
+        <button data-page="news">News</button>
+        <button data-page="dev">Dev</button>
+      </nav>
+      <div class="user"><div class="av" id="av">?</div><span id="uname"></span><button id="logout">Log out</button></div>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section data-view="main">
+      <div class="list-layout">
+        <div>
+          <div class="search">
+            <svg viewBox="0 0 24 24"><path d="M10 2a8 8 0 0 1 6.3 12.9l5.4 5.4-1.4 1.4-5.4-5.4A8 8 0 1 1 10 2zm0 2a6 6 0 1 0 0 12 6 6 0 0 0 0-12z"/></svg>
+            <input type="search" id="q" placeholder="Search levels or creators">
+          </div>
+          <div class="levels" id="levels"></div>
+        </div>
+        <aside class="info" id="info"></aside>
+      </div>
+    </section>
+
+    <section data-view="admin" class="page" hidden>
+      <h1>Admin</h1>
+      <p class="lead" id="adminLead">Review records and manage the list.</p>
+      <div id="adminBody"></div>
+    </section>
+
+    <section data-view="submit" class="page" hidden>
+      <h1>Submit a record</h1>
+      <p class="lead">Send your completion or progress. A list moderator checks the video before it appears.</p>
+      <form class="panel" id="subForm" novalidate>
+        <label>Level<select id="sLevel"></select></label>
+        <div class="grid2">
+          <label>Player<input type="text" id="sPlayer" maxlength="40"></label>
+          <label>Progress (%)<input type="number" id="sProg" min="1" max="100" value="100"></label>
+        </div>
+        <label>Video link<input type="url" id="sVid" placeholder="https://youtube.com/…"></label>
+        <label>Notes for moderators<textarea id="sNote" rows="3" placeholder="Optional: raw footage, click sounds, FPS"></textarea></label>
+        <p class="err" id="sErr"></p>
+        <button class="btn" type="submit" id="sBtn" style="align-self:flex-start">Submit record</button>
+      </form>
+      <h2 class="h" id="mySubsH" hidden>Your submissions</h2>
+      <div id="mySubs"></div>
+    </section>
+
+    <section data-view="news" class="page" hidden>
+      <h1>News</h1>
+      <p class="lead">List changes, placements and community updates.</p>
+      <form class="panel" id="newsForm" hidden novalidate style="margin-bottom:24px">
+        <label>Title<input type="text" id="nTitle" maxlength="120"></label>
+        <label>Post<textarea id="nBody" rows="4"></textarea></label>
+        <p class="err" id="nErr"></p>
+        <button class="btn sm" type="submit" style="align-self:flex-start">Publish post</button>
+      </form>
+      <div class="news" id="newsList"></div>
+    </section>
+
+    <section data-view="dev" class="page" hidden>
+      <h1>Dev</h1>
+      <p class="lead">Connection status for the site.</p>
+      <dl class="status" id="devStatus"></dl>
+    </section>
+  </main>
+</div>
+
+<div class="toast" id="toast" hidden></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="connect.js"></script>
+<script src="script.js"></script>
+</body>
+</html>
