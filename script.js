@@ -6,7 +6,7 @@ const $$ = s => document.querySelectorAll(s);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const AV_COLORS = ["#0881c6", "#c8423b", "#2f9a5b", "#8a4fd1", "#d08a12", "#3a3d42"];
 
-const state = { user: null, profile: null, guest: false, levels: [], selected: null, page: "main", mode: "in" };
+const state = { user: null, profile: null, guest: false, levels: [], selected: null, page: "main", mode: "in", filter: "all" };
 
 function toast(msg) {
   const t = $("#toast");
@@ -52,33 +52,14 @@ function friendly(msg) {
   return m || "Something went wrong. Try again.";
 }
 
-function svgThumb(seed) {
-  const hue = (seed * 47) % 360;
-  let r = seed * 9301 + 49297;
-  const rnd = () => ((r = (r * 9301 + 49297) % 233280) / 233280);
-  let blocks = "", spikes = "";
-  for (let i = 0; i < 14; i++) {
-    const x = i * 30, h = Math.floor(rnd() * 4);
-    for (let j = 0; j < h; j++) blocks += `<rect x="${x}" y="${150 - (j + 1) * 20}" width="20" height="20" fill="none" stroke="hsl(${hue} 80% 70%)" stroke-opacity=".55"/>`;
-    if (rnd() > 0.55) spikes += `<path d="M${x + 20} ${150 - h * 20} l8 -14 l8 14z" fill="hsl(${hue + 150} 70% 55%)" fill-opacity=".75"/>`;
-  }
-  return `<svg class="thumb" viewBox="0 0 420 150" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
-    <defs><linearGradient id="g${seed}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="hsl(${hue} 55% 22%)"/><stop offset="1" stop-color="hsl(${hue + 25} 60% 38%)"/></linearGradient>
-    <pattern id="p${seed}" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M20 0H0V20" fill="none" stroke="hsl(${hue} 60% 60%)" stroke-opacity=".18"/></pattern></defs>
-    <rect width="420" height="150" fill="url(#g${seed})"/><rect width="420" height="150" fill="url(#p${seed})"/>${blocks}${spikes}</svg>`;
-}
-
 function thumb(level) {
   const id = ytId(level.video);
   if (id) return `<img class="thumb" src="https://i.ytimg.com/vi/${id}/mqdefault.jpg" alt="" loading="lazy">`;
-  return svgThumb(level.id);
+  return "";
 }
 
-const demonIcon = `<svg viewBox="0 0 64 64" aria-hidden="true"><path d="M8 18 2 6l16 6M56 18l6-12-16 6" fill="#c8423b"/>
-<circle cx="32" cy="34" r="24" fill="#c8423b"/><circle cx="32" cy="34" r="24" fill="none" stroke="#24272b" stroke-width="3"/>
-<path d="M17 28l10 4M47 28l-10 4" stroke="#24272b" stroke-width="3" stroke-linecap="round"/>
-<circle cx="23" cy="34" r="3.5" fill="#fff"/><circle cx="41" cy="34" r="3.5" fill="#fff"/>
-<path d="M20 45q12 8 24 0l-4 -2-4 3-4-3-4 3-4-3z" fill="#24272b"/></svg>`;
+const statusIcon = l => `<img src="images/${l.possible === false ? "impossible" : "possible"}.webp" alt="${l.possible === false ? "Impossible" : "Possible"}">`;
+const statusTag = l => l.possible === false ? `<span class="tag impossible">Impossible</span>` : `<span class="tag possible">Possible</span>`;
 
 function isAdmin() {
   return !!state.profile?.is_admin;
@@ -221,16 +202,17 @@ function renderList() {
   }
   const rows = state.levels
     .map((l, i) => ({ l, i }))
+    .filter(({ l }) => state.filter === "all" || (state.filter === "possible") === (l.possible !== false))
     .filter(({ l }) => !q || l.name.toLowerCase().includes(q) || [l.creator, ...(l.extra_creators || [])].some(c => c.toLowerCase().includes(q)));
   box.innerHTML = rows.map(({ l, i }) => `
     <button class="lvl" data-id="${l.id}" aria-pressed="${l.id === state.selected}">
-      <div class="diff">${demonIcon}</div>
+      <div class="diff">${statusIcon(l)}</div>
       <div class="body">${thumb(l)}
         <span class="wr"><i>WR</i>${l.wr ? l.wr + "%" : "none"}</span>
-        <h3><span class="rk">#${i + 1}</span>${esc(l.name)}</h3>
+        <h3><span class="rk">#${i + 1}</span>${esc(l.name)}${statusTag(l)}</h3>
         <p class="by">Creator: <b>${esc(l.creator)}</b>${l.extra_creators?.length ? `, and ${l.extra_creators.length} more` : ""}</p>
       </div>
-    </button>`).join("") || `<p class="muted">No levels match “${esc(q)}”.</p>`;
+    </button>`).join("") || `<p class="muted">No levels match this search or filter.</p>`;
   $$(".lvl").forEach(b => (b.onclick = () => {
     state.selected = +b.dataset.id;
     renderList();
@@ -238,6 +220,11 @@ function renderList() {
   }));
 }
 $("#q").addEventListener("input", renderList);
+$$("#filters button").forEach(b => (b.onclick = () => {
+  state.filter = b.dataset.f;
+  $$("#filters button").forEach(x => x.setAttribute("aria-pressed", x === b));
+  renderList();
+}));
 
 function renderInfo(open) {
   const info = $("#info");
@@ -252,13 +239,17 @@ function renderInfo(open) {
   const canPost = state.user && !state.guest;
   info.innerHTML = `
     <button class="close-info" aria-label="Close level info">×</button>
-    <div class="hero">${thumb(l)}<span class="rkbig">#${rank}</span></div>
+    ${thumb(l) ? `<div class="hero">${thumb(l)}<span class="rkbig">#${rank}</span></div>` : ""}
     <div class="pad">
-      <div>
-        <h2>${esc(l.name)}</h2>
-        <p class="by">by <b>${esc([l.creator, ...(l.extra_creators || [])].join(", "))}</b>${l.verifier ? ` · verified by <b>${esc(l.verifier)}</b>` : ""}</p>
+      <div class="title-row">${statusIcon(l)}
+        <div>
+          <h2>${esc(l.name)}</h2>
+          <p class="by">by <b>${esc([l.creator, ...(l.extra_creators || [])].join(", "))}</b>${l.verifier ? ` · verified by <b>${esc(l.verifier)}</b>` : ""}</p>
+        </div>
       </div>
       <dl class="stats">
+        <div><dt>Status</dt><dd>${statusTag(l).replace('class="tag', 'style="margin:0" class="tag')}</dd></div>
+        <div><dt>Position</dt><dd>#${rank}</dd></div>
         <div><dt>Level ID</dt><dd>${esc(l.gd_id || "—")}</dd></div>
         <div><dt>List WR</dt><dd>${l.wr ? l.wr + "%" : "None"}</dd></div>
       </dl>
@@ -447,7 +438,10 @@ async function renderAdmin() {
         <label>Verifier<input type="text" id="aVer"></label>
         <label>GD level ID<input type="text" id="aGd" inputmode="numeric"></label>
       </div>
-      <label>Verification video<input type="url" id="aVid" placeholder="https://youtube.com/…"></label>
+      <div class="grid2">
+        <label>Verification video<input type="url" id="aVid" placeholder="https://youtube.com/…"></label>
+        <label>Status<select id="aPossible"><option value="true">Possible</option><option value="false">Impossible</option></select></label>
+      </div>
       <p class="err" id="aErr"></p>
       <button class="btn sm" type="submit" style="align-self:flex-start">Add to list</button>
     </form>
@@ -463,79 +457,5 @@ async function renderAdmin() {
     if (!name || !creator) return ($("#aErr").textContent = "Name and creator are required.");
     if (!(pos >= 1)) return ($("#aErr").textContent = "Position must be 1 or higher.");
     if (vid && !safeUrl(vid)) return ($("#aErr").textContent = "Video link must start with https://");
-    const { error } = await db.rpc("add_level", {
-      p_position: pos, p_name: name, p_creator: creator,
-      p_extra: $("#aMore").value.split(",").map(s => s.trim()).filter(Boolean),
-      p_verifier: $("#aVer").value.trim() || null, p_gd_id: $("#aGd").value.trim() || null, p_video: vid || null
-    });
-    if (error) return ($("#aErr").textContent = friendly(error.message));
-    toast(`${name} added at #${Math.min(pos, state.levels.length + 1)}`);
-    await loadLevels();
-    renderAdmin();
-  });
-}
-
-function renderOrder() {
-  const box = $("#order");
-  if (!state.levels.length) return (box.innerHTML = `<p class="muted">No levels yet.</p>`);
-  box.innerHTML = `<div class="scroll-x"><table class="adm"><thead><tr><th>#</th><th>Level</th><th>Creator</th><th>Move to</th><th></th></tr></thead><tbody>
-    ${state.levels.map((l, i) => `<tr>
-      <td>${i + 1}</td><td>${esc(l.name)}</td><td>${esc(l.creator)}</td>
-      <td><div class="row-actions"><input type="number" min="1" max="${state.levels.length}" value="${i + 1}" id="mv${l.id}" aria-label="New position for ${esc(l.name)}"><button class="mini" data-move="${l.id}">Move</button></div></td>
-      <td><button class="mini n" data-rm="${l.id}">Remove</button></td>
-    </tr>`).join("")}
-  </tbody></table></div>`;
-  box.querySelectorAll("[data-move]").forEach(b => (b.onclick = async () => {
-    const id = +b.dataset.move, pos = parseInt($("#mv" + id).value, 10);
-    if (!(pos >= 1)) return toast("Enter a position of 1 or higher.");
-    const { error } = await db.rpc("move_level", { p_id: id, p_position: pos });
-    if (error) return toast(friendly(error.message));
-    toast("List order updated");
-    await loadLevels();
-    renderOrder();
-  }));
-  box.querySelectorAll("[data-rm]").forEach(b => armButton(b, async () => {
-    const { error } = await db.rpc("remove_level", { p_id: +b.dataset.rm });
-    if (error) return toast(friendly(error.message));
-    toast("Level removed");
-    await loadLevels();
-    renderOrder();
-  }));
-}
-
-async function loadPending() {
-  const box = $("#pending");
-  const { data, error } = await db.from("records").select("id,player,progress,video,notes,created_at,levels(name),profiles(username)")
-    .eq("status", "pending").order("created_at");
-  if (error) return (box.innerHTML = `<p class="err">${esc(error.message)}</p>`);
-  if (!data.length) return (box.innerHTML = `<p class="muted">Nothing waiting for review.</p>`);
-  box.innerHTML = `<div class="scroll-x"><table class="adm"><thead><tr><th>Level</th><th>Player</th><th>Progress</th><th>Video</th><th>Sent by</th><th></th></tr></thead><tbody>
-    ${data.map(r => `<tr>
-      <td>${esc(r.levels?.name || "Removed level")}</td><td>${esc(r.player)}${r.notes ? `<br><small class="muted">${esc(r.notes)}</small>` : ""}</td>
-      <td>${r.progress}%</td>
-      <td>${safeUrl(r.video) ? `<a href="${esc(r.video)}" target="_blank" rel="noopener">Open ↗</a>` : "—"}</td>
-      <td>${esc(r.profiles?.username || "—")}<br><small class="muted">${timeAgo(r.created_at)}</small></td>
-      <td><div class="row-actions"><button class="mini y" data-id="${r.id}" data-s="accepted">Accept</button><button class="mini n" data-id="${r.id}" data-s="rejected">Reject</button></div></td>
-    </tr>`).join("")}
-  </tbody></table></div>`;
-  box.querySelectorAll("[data-s]").forEach(b => (b.onclick = async () => {
-    b.disabled = true;
-    const { error } = await db.from("records").update({ status: b.dataset.s }).eq("id", b.dataset.id);
-    if (error) { b.disabled = false; return toast(friendly(error.message)); }
-    toast(b.dataset.s === "accepted" ? "Record accepted" : "Record rejected");
-    loadPending();
-    loadLevels();
-  }));
-}
-
-async function renderDev() {
-  const box = $("#devStatus");
-  box.innerHTML = `<dt>Database</dt><dd class="muted">Checking…</dd>`;
-  const t0 = performance.now();
-  const { count, error } = await db.from("levels").select("id", { count: "exact", head: true });
-  const ms = Math.round(performance.now() - t0);
-  box.innerHTML = `
-    <dt>Database</dt><dd><span class="dot ${error ? "off" : "on"}"></span>${error ? esc(friendly(error.message)) : `Connected (${ms} ms)`}</dd>
-    <dt>Levels</dt><dd>${error ? "—" : count}</dd>
-    <dt>Signed in</dt><dd>${state.guest ? "Guest" : esc(state.profile?.username)}${isAdmin() ? " (admin)" : ""}</dd>`;
-}
+    const possible = $("#aPossible").value === "true";
+    const 
