@@ -68,7 +68,7 @@ function thumb(level) {
   return "";
 }
 
-const statusIcon = l => `<img src="images/${l.possible === false ? "impossible" : "possible"}.webp" alt="${l.possible === false ? "Impossible" : "Possible"}">`;
+const statusIcon = l => `<img src="images/${l.possible === false ? "impossible" : "possible"}.webp" alt="" onerror="this.remove()">`;
 const statusTag = l => l.possible === false ? `<span class="tag impossible">Impossible</span>` : `<span class="tag possible">Possible</span>`;
 
 function isAdmin() {
@@ -461,4 +461,4 @@ async function renderAdmin() {
   loadPending();
   $("#addLevel").addEventListener("submit", async e => {
     e.preventDefault();
-    const name = $(
+    const name = $("#aName").value.trim(), cre
