@@ -1,3 +1,13 @@
+function showFatal(msg) {
+  const box = document.getElementById("err");
+  if (box) box.textContent = "Site error: " + msg;
+  const t = document.getElementById("toast");
+  if (t) { t.textContent = "Site error: " + msg; t.hidden = false; }
+}
+window.addEventListener("error", e => showFatal(e.message));
+window.addEventListener("unhandledrejection", e => showFatal(e.reason?.message || String(e.reason)));
+if (typeof db === "undefined") showFatal("connect.js didn't load. Upload it next to index.html.");
+
 const ACCOUNT_DOMAIN = "players.ipgdgll.com";
 const toLogin = name => name.trim().toLowerCase() + "@" + ACCOUNT_DOMAIN;
 
@@ -451,11 +461,4 @@ async function renderAdmin() {
   loadPending();
   $("#addLevel").addEventListener("submit", async e => {
     e.preventDefault();
-    const name = $("#aName").value.trim(), creator = $("#aCreator").value.trim();
-    const pos = parseInt($("#aPos").value, 10);
-    const vid = $("#aVid").value.trim();
-    if (!name || !creator) return ($("#aErr").textContent = "Name and creator are required.");
-    if (!(pos >= 1)) return ($("#aErr").textContent = "Position must be 1 or higher.");
-    if (vid && !safeUrl(vid)) return ($("#aErr").textContent = "Video link must start with https://");
-    const possible = $("#aPossible").value === "true";
-    const 
+    const name = $(
