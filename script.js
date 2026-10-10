@@ -58,7 +58,7 @@ function friendly(msg) {
   if (/already registered|already exists/i.test(m)) return "That username is taken.";
   if (/signups not allowed/i.test(m)) return "New accounts are closed right now.";
   if (/rate limit/i.test(m)) return "Too many attempts. Wait a minute and try again.";
-  if (/Failed to fetch|NetworkError/i.test(m)) return "Can't reach the server. Check your connection.";
+  if (/Failed to fetch|NetworkError/i.test(m)) return "Can't reach the server. Check your connectione.";
   return m || "Something went wrong. Try again.";
 }
 
